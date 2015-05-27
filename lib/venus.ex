@@ -1,4 +1,5 @@
 defmodule Venus do
+  defstruct name: "", pid: nil
   def start do
     port = 3000
     {:ok, socket} = :gen_tcp.listen(port,[:binary,{:packet, 0},{:active, false}])
@@ -27,34 +28,40 @@ defmodule Venus do
       {:con_closed} ->
         IO.puts "INFO: Unconfigured Connection closed"
         Venus.server(socket,state)
+      {:con_closed, name} ->
+        newstate = Map.delete(state, "#{name}")
+        IO.puts "INFO: Server-#{name} has disconnected"
+        Venus.server(socket,newstate)
       {:register,name,sender} ->
-        case get_in(state,[name, :pid]) do
+        case state["#{name}"] do
           nil ->
-            newstate = put_in(state["#{name}"].pid, sender)
+            newserver = %Venus{name: "#{name}", pid: sender}
+            newstate = put_in(state["#{name}"], newserver )
+            IO.puts "INFO: Server-#{name} has registered"
             send(sender,{:ok})
-            IO.puts "INFO: Server-#{name} has registered with Venus"
             Venus.server(socket,newstate)
           _ ->
             send(sender,{:error})
             Venus.server(socket,state)
         end
-        IO
-      _ ->
+      _err ->
         IO.puts "ERROR: Unexpected command"
+        IO.puts _err
         send(self(), {:shutdown})
         Venus.server(socket,state)
     end
   end
 end
 
+
 defmodule Venus_watcher do
   def new(socket) do
-    spawn(Venus_watcher,:new,[socket])
+    spawn(Venus_watcher,:sock_watcher,[socket])
   end
 
   def sock_watcher(socket) do
     {:ok, con} = :gen_tcp.accept(socket)
-    send(:main, {:connection})
+    send(:main, {:con_made})
     Venus_watcher.new(socket)
     handle_connection(con)
   end
@@ -68,6 +75,7 @@ defmodule Venus_watcher do
             send(:main,{:register,name,self()})
             receive do
               {:ok} ->
+                :gen_tcp.send(connection, :erlang.bitstring_to_list("Welcome #{name}"))
                 Venus_Serverman.new(connection,name)
               {:error} ->
                 :gen_tcp.send(connection, :erlang.bitstring_to_list("Server name taken"))
@@ -75,10 +83,16 @@ defmodule Venus_watcher do
             end
           _ ->
             :gen_tcp.send(connection, :erlang.bitstring_to_list("Invalid packet"))
+            Venus_watcher.handle_connection(connection)
         end
         Venus_watcher.handle_connection(connection)
-      _ ->
-        send(:main,{:con_closed})
+      {_,con} ->
+        case con do
+          connection ->
+            send(:main,{:con_closed})
+          _ ->
+            Venus_watcher.handle_connection(connection)
+        end
     end
   end
 
@@ -86,8 +100,15 @@ end
 
 defmodule Venus_Serverman do
   def new(connection,name) do
-
+    :inet.setopts(connection, [{:active, :true}])
+    Venus_Serverman.loop(connection,name)
   end
 
+  def loop(connection, name) do
+    receive do
+      {:tcp_closed,con} ->
+        send(:main,{:con_closed,name})
+    end
+  end
 
 end
