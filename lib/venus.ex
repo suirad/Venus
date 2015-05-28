@@ -4,7 +4,8 @@
 # them appropriately. It is strictly for routing and keeping master state. Because shared state is for the children(and other languages)
 #todo:
 # - Specification of configuration + code to make it work; because duh.
-# - Make this thing a gen_server nerd, it will obviously optimize the hell out of it, plus make this garbage code skimmable.
+# - Make this thing a gen_server nerd, it will obviously refactor the hell out of it, plus make this garbage code skimmable.
+# - Handle the {:route, name, plugin, action} message from serverman in server
 
 defmodule Venus do
   def start do
