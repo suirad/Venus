@@ -1,5 +1,12 @@
+#Main process running the program.
+#This starting point will load any config* options, as well as setup and configure the socket.
+# It is also the main routing module, so it will take messages from the different servers and route
+# them appropriately. It is strictly for routing and keeping master state. Because shared state is for the children(and other languages)
+#todo:
+# - Specification of configuration + code to make it work; because duh.
+# - Make this thing a gen_server nerd, it will obviously optimize the hell out of it, plus make this garbage code skimmable.
+
 defmodule Venus do
-  defstruct name: "", pid: nil
   def start do
     port = 3000
     {:ok, socket} = :gen_tcp.listen(port,[:binary,{:packet, 0},{:active, false}])
@@ -8,11 +15,9 @@ defmodule Venus do
   end
 
   def server(socket) do
-    #state = %{username: "Player1", wallet: %{diamonds: 100, oil: 100, gold: 100}}
-    #state = put_in(state.wallet.diamonds, state.wallet.diamonds - 10)
     Process.register(self(), :main)
     state = %{}
-    Venus_watcher.new(socket)
+    Venus_Watcher.new(socket)
     IO.puts "INFO: Server Initialized"
     Venus.server(socket,state)
   end
@@ -35,7 +40,7 @@ defmodule Venus do
       {:register,name,sender} ->
         case state["#{name}"] do
           nil ->
-            newserver = %Venus{name: "#{name}", pid: sender}
+            newserver = %GameServer{name: "#{name}", pid: sender}
             newstate = put_in(state["#{name}"], newserver )
             IO.puts "INFO: Server-#{name} has registered"
             send(sender,{:ok})
@@ -51,64 +56,4 @@ defmodule Venus do
         Venus.server(socket,state)
     end
   end
-end
-
-
-defmodule Venus_watcher do
-  def new(socket) do
-    spawn(Venus_watcher,:sock_watcher,[socket])
-  end
-
-  def sock_watcher(socket) do
-    {:ok, con} = :gen_tcp.accept(socket)
-    send(:main, {:con_made})
-    Venus_watcher.new(socket)
-    handle_connection(con)
-  end
-
-  def handle_connection(connection) do
-    case :gen_tcp.recv(connection,0) do
-      {:ok, data} ->
-        msg = String.strip(data)
-        case msg do
-          "register,"<>name ->
-            send(:main,{:register,name,self()})
-            receive do
-              {:ok} ->
-                :gen_tcp.send(connection, :erlang.bitstring_to_list("Welcome #{name}"))
-                Venus_Serverman.new(connection,name)
-              {:error} ->
-                :gen_tcp.send(connection, :erlang.bitstring_to_list("Server name taken"))
-                Venus_watcher.handle_connection(connection)
-            end
-          _ ->
-            :gen_tcp.send(connection, :erlang.bitstring_to_list("Invalid packet"))
-            Venus_watcher.handle_connection(connection)
-        end
-        Venus_watcher.handle_connection(connection)
-      {_,con} ->
-        case con do
-          connection ->
-            send(:main,{:con_closed})
-          _ ->
-            Venus_watcher.handle_connection(connection)
-        end
-    end
-  end
-
-end
-
-defmodule Venus_Serverman do
-  def new(connection,name) do
-    :inet.setopts(connection, [{:active, :true}])
-    Venus_Serverman.loop(connection,name)
-  end
-
-  def loop(connection, name) do
-    receive do
-      {:tcp_closed,con} ->
-        send(:main,{:con_closed,name})
-    end
-  end
-
 end
