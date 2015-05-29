@@ -1,13 +1,12 @@
 #This process is the process that handles each individual gameserver connection, 1 for 1.
 # It does everything as far as handling packets sent to and from the gameservers, as well as responding to
-# and handling malformed/invalid packets before they bother the main process. Its pretty cool.
+# and handling malformed/invalid packets before they bother the venus process. Its pretty cool.
 # I am tired of writing comments and am going back to coding so i can actually finish this sometime soon.
 #todo:
-# - Finish handle_packet
 
-defmodule Venus_Serverman do
+defmodule Venus.Serverman do
   def new(connection) do
-    spawn(Venus_Serverman,:handle_connection,[connection])
+    spawn(Venus.Serverman,:handle_connection,[connection])
   end
 
   def handle_connection(connection) do
@@ -16,46 +15,44 @@ defmodule Venus_Serverman do
         msg = String.strip(data)
         case msg do
           "register,"<>name ->
-            send(:main,{:register,name,self()})
+            send(:venus,{:register,name,self()})
             receive do
               {:ok} ->
-                :gen_tcp.send(connection, :erlang.bitstring_to_list("Welcome #{name}"))
+                :gen_tcp.send(connection, 'Welcome #{name}')
                 loop(connection,name)
               {:error} ->
-                :gen_tcp.send(connection, :erlang.bitstring_to_list("Server name taken"))
+                :gen_tcp.send(connection, 'Server name taken')
                 handle_connection(connection)
             end
           _ ->
-            :gen_tcp.send(connection, :erlang.bitstring_to_list("Invalid packet"))
+            :gen_tcp.send(connection, 'Invalid packet')
             handle_connection(connection)
         end
       _err ->
-        send(:main,{:con_closed})
+        send(:venus,{:con_closed})
     end
   end
 
   def loop(connection, name) do
-    :inet.setopts(connection, [{:active, :once}])
+    :inet.setopts(connection, active: :once)
     receive do
       {:die} ->
-        :gen_tcp.send(connection, make_packet("Connection closed"))
+        :gen_tcp.send(connection, 'Connection closed')
         :gen_tcp.close(connection)
       {:tcp_closed,_con} ->
-        send(:main,{:con_closed,name})
+        send(:venus,{:con_closed,name})
       {:tcp,connection,data} ->
-        packet = String.strip(data)
-        msg = handle_packet(packet)
+        msg = handle_packet(String.strip(data))
         case msg do
-          {:ok, plugin, action} ->
-            send(:main,{:route,name,plugin,action})
+          {:msg, server, plugin, message} ->
+            send(:venus,{:route,server,plugin,message})
           {:error, reason} ->
-            responce = "Message refused: #{reason}/nMessage: #{msg}"
-            :gen_tcp.send(connection, make_packet(responce))
+            :gen_tcp.send(connection, 'Message refused: #{reason} | Message: #{data}')
         end
         loop(connection,name)
 
-      {:main,msg} ->
-        :gen_tcp.send(connection,msg)
+      {:msg,plugin,msg} ->
+        :gen_tcp.send(connection,'msg,#{plugin},#{msg}')
         loop(connection,name)
 
       _err ->
@@ -63,13 +60,19 @@ defmodule Venus_Serverman do
     end
   end
 
+  #return {:ok, server, plugin, message} or {:error, reason}
   def handle_packet(data) do
-    #return {:ok, plugin, action} or {:error, reason}
-
-  end
-
-  def make_packet(data) do
-    :elixir.bitstring_to_list(data)
+    case data do
+      "msg,"<>rest ->
+        case String.split(rest,",", parts: 3) do
+          [server, plugin, msg] ->
+            {:msg,server,plugin,msg}
+          _err ->
+            {:error, "Invalid Message"}
+        end
+      _err ->
+        {:error, "Invalid Packet"}
+    end
   end
 
 end

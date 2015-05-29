@@ -5,16 +5,16 @@
 # spawning more watcher processes, which is as simple as: Venus_Watcher.new(socket)
 # Money.
 
-defmodule Venus_Watcher do
+defmodule Venus.Watcher do
   def new(socket) do
-    spawn(Venus_Watcher,:sock_watcher,[socket])
+    spawn(Venus.Watcher,:sock_watcher,[socket])
   end
 
   def sock_watcher(socket) do
     {:ok, con} = :gen_tcp.accept(socket)
-    pid = Venus_Serverman.new(con)
+    pid = Venus.Serverman.new(con)
     :gen_tcp.controlling_process(con, pid)
-    send(:main, {:con_made})
+    send(:venus, {:con_made})
     sock_watcher(socket)
   end
 

@@ -2,6 +2,6 @@
 # Obviously this is unfinished for now.
 # Fight me about it.
 
-defmodule GameServer do
+defmodule Venus.Server do
   defstruct name: "", pid: nil
 end

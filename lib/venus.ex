@@ -5,20 +5,24 @@
 #todo:
 # - Specification of configuration + code to make it work; because duh.
 # - Make this thing a gen_server nerd, it will obviously refactor the hell out of it, plus make this garbage code skimmable.
-# - Handle the {:route, name, plugin, action} message from serverman in server
+# - Possibly changing the gameserver structure to a record, that could probably be better in use. Il need to test it...
 
 defmodule Venus do
   def start do
     port = 3000
-    {:ok, socket} = :gen_tcp.listen(port,[:binary,{:packet, 0},{:active, false}])
-    IO.puts "INFO: Started socket on port: #{port}"
-    server(socket)
+    case :gen_tcp.listen(port,[:binary,{:packet, 0},{:active, false}]) do
+      {:ok, socket} ->
+        IO.puts "INFO: Started socket on port: #{port}"
+        server(socket)
+      _err ->
+        IO.puts "ERROR: Unable to bind to port"
+    end
   end
 
   def server(socket) do
-    Process.register(self(), :main)
+    Process.register(self(), :venus)
     state = %{}
-    Venus_Watcher.new(socket)
+    Venus.Watcher.new(socket)
     IO.puts "INFO: Server Initialized"
     Venus.server(socket,state)
   end
@@ -36,12 +40,12 @@ defmodule Venus do
         Venus.server(socket,state)
       {:con_closed, name} ->
         newstate = Map.delete(state, "#{name}")
-        IO.puts "INFO: Server-#{name} has disconnected"
+        IO.puts "INFO: Server: #{name} has disconnected"
         Venus.server(socket,newstate)
       {:register,name,sender} ->
         case state["#{name}"] do
           nil ->
-            newserver = %GameServer{name: "#{name}", pid: sender}
+            newserver = %Venus.Server{name: "#{name}", pid: sender}
             newstate = put_in(state["#{name}"], newserver )
             IO.puts "INFO: Server-#{name} has registered"
             send(sender,{:ok})
@@ -49,6 +53,16 @@ defmodule Venus do
           _ ->
             send(sender,{:error})
             Venus.server(socket,state)
+        end
+      {:route,server,plugin,message} ->
+        case state["#{server}"] do
+          nil ->
+            IO.puts("WARN: Dropped message - Server '#{server}' doesn't exist")
+            Venus.server(socket,state)
+          gameserver ->
+            #IO.puts "Routing to #{server}:#{plugin}>#{message}"
+            send(gameserver.pid,{:msg,plugin,message})
+            Venus.server(socket, state)
         end
       _err ->
         IO.puts "ERROR: Unexpected command"

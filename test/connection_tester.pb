@@ -1,21 +1,39 @@
 InitNetwork()
 con = OpenNetworkConnection("localhost", 3000)
 If Not con:Debug "Connection is null":End:EndIf
-msg.s = "register,Civcraft"
-SendNetworkData(con,@msg,Len(msg))
-*buff = AllocateMemory(100)
-Repeat
-  If NetworkClientEvent(con) = #PB_NetworkEvent_Data
-    len = ReceiveNetworkData(con,*buff,100)
-    Debug "Got: "+PeekS(*buff,len)
-    msg = "Test"
-    Delay(1000)
-    SendNetworkData(con,@msg,Len(msg))
-    Delay(1000)
-    End
-  EndIf
-  Delay(10)
-  ForEver
+Global *buff = AllocateMemory(100)
+Declare sendrcv(con,*msg,len):Declare rcv(con)
+Global msg.s
+
+msg = "register,civcraft"
+sendrcv(con,@msg,Len(msg))
+msg = "msg,civcraft,prisonpearl,my message"
+sendrcv(con,@msg,Len(msg))
+SendNetworkData(con,@"msg,cifquaft,pp,msg",Len("msg,cifquaft,pp,msg"))
+rcv(con)
+
+Procedure rcv(con)
+  Repeat
+    Delay(10)
+    If NetworkClientEvent(con) = #PB_NetworkEvent_Data
+      len = ReceiveNetworkData(con,*buff,100)
+      Debug PeekS(*buff,len)
+    EndIf
+  ForEver  
+EndProcedure
+
+Procedure sendrcv(con,*msg, mlen)
+  SendNetworkData(con,*msg,mlen)
+  While Not NetworkClientEvent(con)
+    Delay(10)
+  Wend
+  len = ReceiveNetworkData(con,*buff,100)
+  Debug PeekS(*buff,len)
+  Delay(1000)
+EndProcedure
+
+
 ; IDE Options = PureBasic 5.31 (Windows - x86)
-; CursorPosition = 13
+; CursorPosition = 11
+; Folding = -
 ; EnableXP
