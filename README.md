@@ -5,6 +5,8 @@ Venus is a concurrent message routing server to support game servers made in Eli
 
 The current implementation will be supported by a bukkit plugin that handles the communication for other bukkit plugins.
 
+Venus is licenced under the BSD 3-Clause License.
+
 ##How to use:##
 **• Install the latest Elixir**
 
@@ -15,3 +17,4 @@ The current implementation will be supported by a bukkit plugin that handles the
 **• Then start the Elixir interactive interface:** iex -S mix
 
 **• Finally start the routing server:** Venus.start
+
