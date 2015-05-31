@@ -10,7 +10,7 @@
 defmodule Venus do
   def start do
     port = 3000
-    case :gen_tcp.listen(port,[:binary,{:packet, 0},{:active, false}]) do
+    case :gen_tcp.listen(port,[:binary,{:packet, :line},{:active, false}]) do
       {:ok, socket} ->
         IO.puts "INFO: Started socket on port: #{port}"
         server(socket)
@@ -52,6 +52,7 @@ defmodule Venus do
             Venus.server(socket,newstate)
           _ ->
             send(sender,{:error})
+            IO.puts "WARN: Server attempted to reuse name: #{name}"
             Venus.server(socket,state)
         end
       {:route,server,plugin,message} ->

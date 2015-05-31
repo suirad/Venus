@@ -18,14 +18,16 @@ defmodule Venus.Serverman do
             send(:venus,{:register,name,self()})
             receive do
               {:ok} ->
-                :gen_tcp.send(connection, 'Welcome #{name}')
+                :gen_tcp.send(connection, 'welcome\n')
                 loop(connection,name)
               {:error} ->
-                :gen_tcp.send(connection, 'Server name taken')
+                :gen_tcp.send(connection, 'Server name taken\n')
                 handle_connection(connection)
             end
           _ ->
-            :gen_tcp.send(connection, 'Invalid packet')
+            :gen_tcp.send(connection, 'Invalid packet\n')
+            IO.puts "Invalid packet"
+            IO.inspect msg
             handle_connection(connection)
         end
       _err ->
@@ -37,7 +39,7 @@ defmodule Venus.Serverman do
     :inet.setopts(connection, active: :once)
     receive do
       {:die} ->
-        :gen_tcp.send(connection, 'Connection closed')
+        :gen_tcp.send(connection, 'Connection closed\n')
         :gen_tcp.close(connection)
       {:tcp_closed,_con} ->
         send(:venus,{:con_closed,name})
@@ -46,13 +48,14 @@ defmodule Venus.Serverman do
         case msg do
           {:msg, server, plugin, message} ->
             send(:venus,{:route,server,plugin,message})
+            IO.inspect {:route,server,plugin,message}
           {:error, reason} ->
-            :gen_tcp.send(connection, 'Message refused: #{reason} | Message: #{data}')
+            :gen_tcp.send(connection, 'Message refused: #{reason} | Message: #{data}\n')
         end
         loop(connection,name)
 
       {:msg,plugin,msg} ->
-        :gen_tcp.send(connection,'msg,#{plugin},#{msg}')
+        :gen_tcp.send(connection,'msg,#{plugin},#{msg}\n')
         loop(connection,name)
 
       _err ->

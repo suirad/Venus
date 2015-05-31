@@ -5,10 +5,11 @@ Global *buff = AllocateMemory(100)
 Declare sendrcv(con,*msg,len):Declare rcv(con)
 Global msg.s
 
-msg = "register,civcraft"
+msg = "register,craps"+#CRLF$
 sendrcv(con,@msg,Len(msg))
-msg = "msg,civcraft,prisonpearl,my message"
+msg = "msg,civcraft,prisonpearl,my message"+#CRLF$
 sendrcv(con,@msg,Len(msg))
+End
 SendNetworkData(con,@"msg,cifquaft,pp,msg",Len("msg,cifquaft,pp,msg"))
 rcv(con)
 
@@ -33,7 +34,7 @@ Procedure sendrcv(con,*msg, mlen)
 EndProcedure
 
 
-; IDE Options = PureBasic 5.31 (Windows - x86)
-; CursorPosition = 11
+; IDE Options = PureBasic 5.22 LTS (Windows - x86)
+; CursorPosition = 9
 ; Folding = -
 ; EnableXP
