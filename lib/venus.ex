@@ -85,15 +85,5 @@ defmodule Venus do
     send(servers[hd(names)].pid,{:msg,plugin,message})
     route_all(servers,tl(names),plugin,message)
   end
-  #   case hd(pids)  do
-  #     [] -> []
-  #     [pid,_] ->
-  #       send(pid,{:msg,plugin,message})
-  #       send_all(tl(pids),plugin,message)
-  #     pid ->
-  #       send(pid,{:msg,plugin,message})
-  #       send_all(tl(pids),plugin,message)
-  #   end
-  # end
 
 end
