@@ -7,7 +7,8 @@ Global msg.s
 
 msg = "register,craps"+#CRLF$
 sendrcv(con,@msg,Len(msg))
-msg = "msg,civcraft,prisonpearl,my message"+#CRLF$
+
+msg = "msg,all,chat,my message"+#CRLF$
 sendrcv(con,@msg,Len(msg))
 End
 SendNetworkData(con,@"msg,cifquaft,pp,msg",Len("msg,cifquaft,pp,msg"))
@@ -34,7 +35,7 @@ Procedure sendrcv(con,*msg, mlen)
 EndProcedure
 
 
-; IDE Options = PureBasic 5.22 LTS (Windows - x86)
-; CursorPosition = 9
+; IDE Options = PureBasic 5.31 (Windows - x86)
+; CursorPosition = 10
 ; Folding = -
 ; EnableXP

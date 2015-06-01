@@ -58,11 +58,17 @@ defmodule Venus do
       {:route,server,plugin,message} ->
         case state["#{server}"] do
           nil ->
-            IO.puts("WARN: Dropped message - Server '#{server}' doesn't exist")
+            case server do
+              "all" ->
+                route_all(state,Map.keys(state),plugin,message)
+                IO.puts "INFO: Routing to all: #{plugin}>#{message}"
+              _ ->
+                IO.puts("WARN: Dropped message - Server '#{server}' doesn't exist")
+            end
             Venus.server(socket,state)
           gameserver ->
             send(gameserver.pid,{:msg,plugin,message})
-            IO.puts "Routing to #{server}:#{plugin}>#{message}"
+            IO.puts "INFO: Routing to #{server}:#{plugin}>#{message}"
             Venus.server(socket, state)
         end
       _err ->
@@ -72,4 +78,22 @@ defmodule Venus do
         Venus.server(socket,state)
     end
   end
+
+  defp route_all(state,[],message,plugin), do: []
+
+  defp route_all(servers,names, plugin, message) do
+    send(servers[hd(names)].pid,{:msg,plugin,message})
+    route_all(servers,tl(names),plugin,message)
+  end
+  #   case hd(pids)  do
+  #     [] -> []
+  #     [pid,_] ->
+  #       send(pid,{:msg,plugin,message})
+  #       send_all(tl(pids),plugin,message)
+  #     pid ->
+  #       send(pid,{:msg,plugin,message})
+  #       send_all(tl(pids),plugin,message)
+  #   end
+  # end
+
 end
