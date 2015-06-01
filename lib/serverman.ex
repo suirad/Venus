@@ -48,7 +48,6 @@ defmodule Venus.Serverman do
         case msg do
           {:msg, server, plugin, message} ->
             send(:venus,{:route,server,plugin,message})
-            IO.inspect {:route,server,plugin,message}
           {:error, reason} ->
             :gen_tcp.send(connection, 'Message refused: #{reason} | Message: #{data}\n')
         end

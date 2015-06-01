@@ -61,8 +61,8 @@ defmodule Venus do
             IO.puts("WARN: Dropped message - Server '#{server}' doesn't exist")
             Venus.server(socket,state)
           gameserver ->
-            #IO.puts "Routing to #{server}:#{plugin}>#{message}"
             send(gameserver.pid,{:msg,plugin,message})
+            IO.puts "Routing to #{server}:#{plugin}>#{message}"
             Venus.server(socket, state)
         end
       _err ->
