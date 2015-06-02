@@ -55,12 +55,12 @@ defmodule Venus do
             IO.puts "WARN: Server attempted to reuse name: #{name}"
             Venus.server(socket,state)
         end
-      {:route,server,plugin,message} ->
+      {:route,server,plugin,message,sender} ->
         case state["#{server}"] do
           nil ->
             case server do
               "all" ->
-                route_all(state,Map.keys(state),plugin,message)
+                route_all(state,List.delete(Map.keys(state),sender),plugin,message)
                 IO.puts "INFO: Routing to all: #{plugin}>#{message}"
               _ ->
                 IO.puts("WARN: Dropped message - Server '#{server}' doesn't exist")

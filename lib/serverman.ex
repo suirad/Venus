@@ -47,7 +47,7 @@ defmodule Venus.Serverman do
         msg = handle_packet(String.strip(data))
         case msg do
           {:msg, server, plugin, message} ->
-            send(:venus,{:route,server,plugin,message})
+            send(:venus,{:route,server,plugin,message,name})
           {:error, reason} ->
             :gen_tcp.send(connection, 'Message refused: #{reason} | Message: #{data}\n')
         end
